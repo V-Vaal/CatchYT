@@ -37,11 +37,21 @@ struct RawInfo {
     webpage_url: Option<String>,
 }
 
+/// Windows: suppress the console window yt-dlp would otherwise flash.
+#[cfg(windows)]
 fn base_command(ytdlp: &Path) -> Command {
     let mut cmd = Command::new(ytdlp);
-    #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     cmd
+}
+
+/// Unix: nothing to suppress. Split into its own function rather than a
+/// `#[cfg(windows)]` statement inside a shared body, because the binding would
+/// then be `mut` with no mutation here: an `unused_mut` warning, which CI
+/// treats as an error (`-D warnings`). Same split as `kill_tree` in `runner.rs`.
+#[cfg(not(windows))]
+fn base_command(ytdlp: &Path) -> Command {
+    Command::new(ytdlp)
 }
 
 /// Query yt-dlp for a flat description of `url`. Uses `--flat-playlist` so a
