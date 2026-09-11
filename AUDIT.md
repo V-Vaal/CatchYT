@@ -2,26 +2,28 @@
 
 *Audit réalisé le 2026-07-12, sur l'intégralité du code source (`src/`, `tests/`, `build.rs`, `build.ps1`, CI) et de la documentation (`README.md`, `ARCHITECTURE.md`, `AGENTS.md`).*
 
+> **État au 2026-09-11 : tous les points de cet audit sont traités.** Le document est conservé tel quel, constat d'origine compris, parce que le raisonnement a plus de valeur que la liste. Le détail des correctifs appliqués est en fin de document, section « Suivi des correctifs » ; la colonne *Statut* du tableau ci-dessous en donne le résumé. Le corps de l'audit décrit donc l'état du code **avant** correction.
+
 ## Verdict global
 
 Le projet est **sain et nettement au-dessus de la moyenne** pour un outil personnel : séparation lib/UI propre, moteur pur et très testé, hygiène de sécurité réfléchie (allowlist d'URL avec tests anti-spoofing, arguments passés en vecteur sans shell, protection zip-slip, écritures atomiques, `--ignore-config`/`--no-remote-components`, Deno épinglé avec SHA-256). Aucune faille critique.
 
-Les points à corriger sont : **un bug UI réel** (gel de la progression après 10 minutes), **des angles morts sur l'annulation et le probe**, **une incohérence d'intégrité dans le bootstrap** (yt-dlp/ffmpeg non vérifiés alors que Deno l'est), et **un problème d'environnement sérieux** (projet dans OneDrive avec `.git` détruit).
+Les points à corriger étaient : **un bug UI réel** (gel de la progression après 10 minutes), **des angles morts sur l'annulation et le probe**, **une incohérence d'intégrité dans le bootstrap** (yt-dlp/ffmpeg non vérifiés alors que Deno l'est), et **un problème d'environnement sérieux** (projet non versionné, `.git` détruit).
 
-| ID | Sévérité | Sujet |
-|----|----------|-------|
-| A1 | 🔴 Élevée | Projet sous OneDrive, `.git` vide → aucun historique, risque de corruption |
-| B1 | 🔴 Élevée | La progression UI gèle après 10 min de téléchargement (repaint pump borné) |
-| S1 | 🟠 Moyenne | yt-dlp et ffmpeg téléchargés sans vérification d'intégrité (Deno, si) |
-| B2 | 🟠 Moyenne | Fuite de threads « repaint pump » (un par téléchargement, jamais arrêtés) |
-| B3 | 🟠 Moyenne | Annulation : ffmpeg orphelin non tué, kill inopérant si yt-dlp est silencieux |
-| B4 | 🟠 Moyenne | Probe sans timeout → bouton « Analyser » bloqué définitivement si yt-dlp pend |
-| A2 | 🟠 Moyenne | ARCHITECTURE.md §13 contredit le code (settings + i18n existent) |
-| A3 | 🟠 Moyenne | CI : le binaire publié en release n'est pas celui qui a passé les tests |
-| S2 | 🟡 Faible | Binaires en cache jamais mis à jour ni revérifiés |
-| S3 | 🟡 Faible | Template de nommage custom non validé (vide, chemin absolu, `..`) |
-| S4 | 🟡 Faible | Fermer l'app ne stoppe pas un téléchargement en cours |
-| B5–B8, A4–A6 | ⚪ Mineur | Détails listés plus bas |
+| ID | Sévérité | Sujet | Statut |
+|----|----------|-------|--------|
+| A1 | 🔴 Élevée | Projet sous OneDrive, `.git` vide → aucun historique, risque de corruption | ✅ Corrigé |
+| B1 | 🔴 Élevée | La progression UI gèle après 10 min de téléchargement (repaint pump borné) | ✅ Corrigé |
+| S1 | 🟠 Moyenne | yt-dlp et ffmpeg téléchargés sans vérification d'intégrité (Deno, si) | ✅ Corrigé |
+| B2 | 🟠 Moyenne | Fuite de threads « repaint pump » (un par téléchargement, jamais arrêtés) | ✅ Corrigé |
+| B3 | 🟠 Moyenne | Annulation : ffmpeg orphelin non tué, kill inopérant si yt-dlp est silencieux | ✅ Corrigé |
+| B4 | 🟠 Moyenne | Probe sans timeout → bouton « Analyser » bloqué définitivement si yt-dlp pend | ✅ Corrigé |
+| A2 | 🟠 Moyenne | ARCHITECTURE.md §13 contredit le code (settings + i18n existent) | ✅ Corrigé |
+| A3 | 🟠 Moyenne | CI : le binaire publié en release n'est pas celui qui a passé les tests | ✅ Corrigé |
+| S2 | 🟡 Faible | Binaires en cache jamais mis à jour ni revérifiés | ✅ Corrigé |
+| S3 | 🟡 Faible | Template de nommage custom non validé (vide, chemin absolu, `..`) | ✅ Corrigé |
+| S4 | 🟡 Faible | Fermer l'app ne stoppe pas un téléchargement en cours | ✅ Corrigé |
+| B5–B8, A4–A6 | ⚪ Mineur | Détails listés plus bas | ✅ Corrigé (A5, A6 : partiel) |
 
 ---
 
@@ -149,13 +151,13 @@ Une fois bootstrappés, `yt-dlp`/`ffmpeg`/`deno` ne sont plus jamais rafraîchis
 
 ---
 
-## Suivi des correctifs — 2026-07-13
+## Suivi des correctifs — 2026-07-13 / 2026-09-11
 
-Tous les points ont été traités le 2026-07-13, **sauf A1** (environnement OneDrive/git, volontairement laissé à Valentin).
+Les points de code ont été traités le 2026-07-13. **A1**, seul point hors périmètre code, a été traité le 2026-09-11.
 
 | ID | Statut | Correctif appliqué |
 |----|--------|--------------------|
-| A1 | ⏳ À faire (Valentin) | Déplacement hors OneDrive + ré-init git — hors périmètre code |
+| A1 | ✅ Corrigé (2026-09-11) | Projet sorti de OneDrive, dépôt git recréé et publié sur GitHub ; `target/`, binaires et archives de distribution exclus du suivi |
 | B1 | ✅ Corrigé | Pump supprimé ; `update()` programme `request_repaint_after(100 ms)` tant qu'un job ou un probe est actif — plus de limite de 10 min |
 | S1 | ✅ Corrigé | `fetch_expected_sha256` + `parse_sha256_for` dans `deps.rs` : yt-dlp vérifié contre `SHA2-256SUMS`, ffmpeg contre son sidecar `.sha256` (échec ferme) ; testés |
 | B2 | ✅ Corrigé | Plus aucun thread pump (même correctif que B1) |
@@ -172,6 +174,6 @@ Tous les points ont été traités le 2026-07-13, **sauf A1** (environnement One
 | B8 | ✅ Corrigé | `format_speed` affiche `KiB/s` / `MiB/s` (cohérent avec yt-dlp) ; tests mis à jour |
 | A4 | ✅ Corrigé | `cargo fmt --check` et `clippy --all-targets --all-features -- -D warnings` bloquants en CI ; AGENTS.md mis à jour |
 | A5 | ✅ Partiel | Job `cargo audit` (advisory) ajouté en CI. La montée egui/eframe 0.28 → 0.3x reste à planifier (chantier séparé) |
-| A6 | ✅ Partiel | User-Agent du bootstrap → `CatchYT/<version>`. `repository` dans Cargo.toml à renseigner quand le dépôt GitHub existera (dépend de A1) |
+| A6 | ✅ Corrigé | User-Agent du bootstrap → `CatchYT/<version>` ; `repository` renseigné dans `Cargo.toml` une fois le dépôt créé (2026-09-11) |
 
 Validation : `cargo test --all` (60 tests OK), `cargo clippy --all-targets --all-features -- -D warnings` (aucun warning), `cargo fmt --check` (propre), build release recompilé.
