@@ -1,6 +1,7 @@
 # CatchYT
 
 [![build](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml/badge.svg)](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml)
+[![audit](https://github.com/V-Vaal/CatchYT/actions/workflows/audit.yml/badge.svg)](https://github.com/V-Vaal/CatchYT/actions/workflows/audit.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Téléchargeur de bureau pour **YouTube** et **YouTube Music**, écrit en **Rust** avec une interface **egui** native. CatchYT pilote `yt-dlp` + `ffmpeg` sous le capot et se concentre d'abord sur l'extraction audio (titres, albums, playlists), avec gestion des métadonnées, du nommage et du choix de format/qualité.

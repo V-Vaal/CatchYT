@@ -250,5 +250,5 @@ tag v*.*.* ──► job "release" : télécharge l'artefact TESTÉ de windows-b
 - **Annulation** — tue immédiatement l'arbre de processus, mais ne supprime pas les fichiers partiels déjà écrits dans le dossier de sortie.
 - **`latest` non épinglé** pour yt-dlp/ffmpeg — trade-off assumé (§6), atténué par la vérification des checksums publiés.
 - **Mise à jour des outils manuelle** — le bouton « ↻ yt-dlp » retélécharge à la demande ; pas de vérification automatique de fraîcheur au lancement.
-- **egui/eframe 0.28** — plusieurs versions majeures de retard ; la migration vers les 0.3x reste à planifier.
+- **egui/eframe 0.28** — plusieurs versions majeures de retard ; la migration vers les 0.3x reste à planifier. Elle conditionne aussi RUSTSEC-2026-0194 et -0195 : `quick-xml` 0.39 est verrouillé par `wayland-scanner`, tiré par `winit`. Ces deux advisories sont écartées dans [`.cargo/audit.toml`](.cargo/audit.toml), qui en donne la justification (macro procédurale, code absent des binaires produits, entrée XML figée) et la date de réexamen.
 - **Template personnalisé** — validé a minima (vide → fallback, avertissement si chemin absolu/`..`), mais la syntaxe yt-dlp elle-même n'est pas vérifiée avant le lancement.

@@ -1,0 +1,48 @@
+# Configuration de cargo-audit.
+#
+# Les identifiants listés ci-dessous sont écartés sciemment, pas par commodité.
+# Chacun est justifié, et la règle est stricte : une advisory corrigeable ne
+# figure jamais ici. Les bumps possibles ont été faits avant d'écrire ce
+# fichier (webbrowser 1.2.1 -> 1.2.4 pour RUSTSEC-2026-0257, chacha20 0.10.1
+# -> 0.10.2 pour le yank).
+#
+# ── RUSTSEC-2026-0194 et RUSTSEC-2026-0195 (quick-xml 0.39.4) ────────────────
+#
+# Provenance, vérifiée avec `cargo tree -i quick-xml` :
+#
+#   quick-xml 0.39.4
+#   └── wayland-scanner 0.31.10 (proc-macro)
+#       └── winit / wayland-protocols / wl-clipboard-rs
+#           └── eframe, arboard
+#
+# `wayland-scanner` est une **macro procédurale**. Elle s'exécute dans le
+# compilateur, au moment du build, pour générer les liaisons Rust à partir des
+# fichiers XML de protocole Wayland livrés à l'intérieur des crates
+# `wayland-protocols`. Trois conséquences :
+#
+#   1. Le code de quick-xml n'est présent dans aucun binaire produit par ce
+#      projet, sur aucune plateforme. Il ne tourne que dans rustc.
+#   2. L'entrée XML parsée n'est pas une donnée utilisateur : ce sont des
+#      fichiers figés, vendorés dans les dépendances, identiques à chaque
+#      build.
+#   3. Les deux advisories sont de classe déni de service (temps quadratique,
+#      allocation non bornée). Leur exploitation supposerait un XML de
+#      protocole hostile, donc une crate amont compromise, ce qui implique
+#      déjà l'exécution de code arbitraire à la compilation. À ce stade
+#      l'advisory n'est plus le problème.
+#
+# Le correctif amont (quick-xml >= 0.41) est hors de portée : `wayland-scanner`
+# verrouille la branche 0.39. `cargo update -p quick-xml` répond
+# « Locking 0 packages ». La seule voie réelle est la migration
+# eframe/egui 0.28 vers 0.3x, déjà inscrite dans la dette assumée
+# (ARCHITECTURE.md §13).
+#
+# Réexamen : à la migration egui 0.3x, et au plus tard le 2026-12-01. Si à
+# cette date la migration n'a pas eu lieu, ces deux lignes doivent être
+# rediscutées, pas reconduites par défaut.
+
+[advisories]
+ignore = [
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

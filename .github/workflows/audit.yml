@@ -1,0 +1,44 @@
+name: audit
+
+# Surveillance des advisories RUSTSEC sur l'arbre de dépendances.
+#
+# Séparé de `build` à dessein. Le résultat de cet audit dépend de la base
+# RustSec, qui est mise à jour en continu : le même commit peut passer
+# aujourd'hui et échouer demain, sans qu'une ligne de code ait bougé. Le
+# rattacher au workflow de build reviendrait à faire dépendre l'état d'un
+# commit d'un évènement extérieur au dépôt.
+#
+# Ici l'échec est franc, pas de continue-on-error : ce workflow a son propre
+# badge, et il doit dire la vérité sur l'état des dépendances. Les advisories
+# jugées inatteignables sont écartées nommément dans .cargo/audit.toml, avec
+# leur justification et une date de réexamen.
+
+on:
+  schedule:
+    # Tous les lundis à 06:00 UTC.
+    - cron: "0 6 * * 1"
+  # Et à chaque fois que l'arbre de dépendances ou la config d'audit bouge.
+  push:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".cargo/audit.toml"
+      - ".github/workflows/audit.yml"
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".cargo/audit.toml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Audit dependencies
+        run: cargo audit

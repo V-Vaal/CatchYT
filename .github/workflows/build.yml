@@ -35,18 +35,11 @@ jobs:
       - name: Tests (pure)
         run: cargo test --all
 
-  # ── Dependency advisories (RUSTSEC) — informative, never blocks ────────────
-  audit:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install cargo-audit
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-audit
-      - name: Audit dependencies
-        run: cargo audit
+  # Les advisories RUSTSEC vivent dans leur propre workflow (audit.yml) : elles
+  # dépendent de la base RustSec, qui change sans que le code change. Un commit
+  # ne doit pas être marqué en échec parce qu'une faille a été publiée ailleurs
+  # entre deux pushes, et inversement un build vert ne doit pas masquer une
+  # advisory. Deux questions distinctes, deux workflows, deux badges.
 
   # ── Windows: build the shippable .exe and run tests, upload as artifact ────
   windows-build:
