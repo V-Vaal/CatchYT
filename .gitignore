@@ -1,6 +1,18 @@
+# Rust build output
 /target
 **/*.rs.bk
 Cargo.lock.orig
 *.pdb
-.DS_Store
+
+# Binaires et archives de distribution : ils sont produits par la CI
+# (artefact `catchyt-windows-x86_64`) ou par build.ps1, jamais versionnés.
 /catchyt.exe
+*.exe
+*.zip
+
+# Réglages d'outillage locaux (spécifiques à une machine)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
