@@ -1,90 +1,85 @@
 # CatchYT
 
+**English** · [Français](README.fr.md)
+
 [![build](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml/badge.svg)](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml)
 [![audit](https://github.com/V-Vaal/CatchYT/actions/workflows/audit.yml/badge.svg)](https://github.com/V-Vaal/CatchYT/actions/workflows/audit.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Téléchargeur de bureau pour **YouTube** et **YouTube Music**, écrit en **Rust** avec une interface **egui** native. CatchYT pilote `yt-dlp` + `ffmpeg` sous le capot et se concentre d'abord sur l'extraction audio (titres, albums, playlists), avec gestion des métadonnées, du nommage et du choix de format/qualité.
+A desktop downloader for **YouTube** and **YouTube Music**, written in **Rust** with a native **egui** interface. CatchYT drives `yt-dlp` and `ffmpeg` under the hood. It focuses first on audio extraction (tracks, albums, playlists), with metadata embedding, filename templating and format/quality selection.
 
-*A native desktop downloader for YouTube and YouTube Music, written in Rust with an egui UI, driving `yt-dlp` and `ffmpeg`. Documentation is in French; the application itself ships bilingual FR/EN.*
+<!-- Screenshot: drop the image in assets/ and reference it here, e.g.
+![CatchYT downloading an album](assets/screenshot.png)
+-->
 
-**Pour comprendre le projet en tant que développeur :** [`ARCHITECTURE.md`](ARCHITECTURE.md) (visite guidée du code, threading, protocole de progression, décisions techniques) et [`AUDIT.md`](AUDIT.md) (revue sécurité et code du projet par lui-même, avec le suivi des correctifs).
-
----
-
-## Fonctionnalités
-
-- **Audio ou vidéo** depuis une URL YouTube / YouTube Music (vidéo, playlist ou album).
-- **Formats audio** : MP3, FLAC, Opus, M4A (AAC), WAV, Ogg Vorbis, AAC, ou « source sans ré-encodage ».
-- **Qualité** : meilleure disponible, ou bitrate fixe (320 / 256 / 192 / 128 kbps) pour les formats avec perte.
-- **Vidéo** : sélection de résolution (jusqu'à 4K) et conteneur (MP4 / MKV / WebM).
-- **Métadonnées** : titre, artiste, album et numéro de piste embarqués ; pochette / miniature ; chapitres.
-- **Nommage** : numérotation automatique des pistes quand elle existe, plus des modèles prêts à l'emploi (titre, « Artiste - Titre », ordre de playlist, `Album / 01 - Piste`) ou un modèle yt-dlp personnalisé.
-- **Playlists & albums** : tout télécharger, ou une sélection (`1-5,8`).
-- **Progression en temps réel** : barre de la piste courante + avancement global de l'album/playlist.
-- **Erreurs visibles** : état du téléchargement affiché en grand au centre (en cours / terminé / interrompu), bannière persistante avec la cause principale ; logs détaillés masqués par défaut et activables à la demande.
-- **Interface bilingue** : français par défaut, bascule FR/EN dans la barre du haut (toutes les chaînes vivent dans `src/i18n.rs`).
-- **Liens vérifiés** : seuls les liens HTTPS dont l'hôte est exactement YouTube / YouTube Music / youtu.be sont acceptés ; collage via Ctrl+V ou clic droit → Coller.
-- **Réglages mémorisés** : langue, format, qualité, nommage, dossier de sortie et options sont sauvegardés (`%LOCALAPPDATA%\CatchYT\settings.json`) et restaurés au lancement suivant.
-- **Mise à jour de yt-dlp en un clic** : bouton « ↻ yt-dlp » dans la barre du haut — utile quand YouTube change et que les téléchargements se mettent à échouer.
-- **Aucune console qui s'ouvre**, DPI-aware, dossier de destination configurable.
-
-### À savoir sur le FLAC
-
-La source YouTube est **compressée avec perte** (Opus ou AAC). Convertir en FLAC produit un fichier lossless *en conteneur*, mais **sans gain réel de qualité** par rapport à la source. C'est proposé pour la cohérence de bibliothèque, pas pour récupérer une qualité qui n'existe pas dans le flux d'origine.
+**Reading the project as a developer.** Two documents carry most of the reasoning, and both are in French: [`ARCHITECTURE.md`](ARCHITECTURE.md) is a guided tour of the code (module map, threading model, progress protocol, design decisions, extension recipes), and [`AUDIT.md`](AUDIT.md) is a security and code review of the project by itself, with the follow-up table of applied fixes. The source code and its comments are in English.
 
 ---
 
-## Premier lancement
+## Features
 
-CatchYT **n'embarque pas** `yt-dlp.exe`, `ffmpeg.exe` ni `deno.exe` dans son binaire. Au premier démarrage, il les télécharge depuis leurs dépôts officiels (GitHub) vers :
+- **Audio or video** from a YouTube / YouTube Music URL (single item, playlist or album).
+- **Audio formats**: MP3, FLAC, Opus, M4A (AAC), WAV, Ogg Vorbis, AAC, or the source stream with no re-encoding.
+- **Quality**: best available, or a fixed bitrate (320 / 256 / 192 / 128 kbps) for lossy formats.
+- **Video**: resolution up to 4K, container MP4 / MKV / WebM.
+- **Metadata**: title, artist, album and track number embedded; cover art / thumbnail; chapters.
+- **Naming**: automatic track numbering where available, ready-made templates (title, `Artist - Title`, playlist order, `Album / 01 - Track`), or a custom yt-dlp template.
+- **Playlists and albums**: download everything, or a selection (`1-5,8`).
+- **Live progress**: a bar for the current track plus overall album/playlist position.
+- **Errors you can see**: job state shown large and centred (running / done / interrupted), a persistent banner naming the root cause, detailed logs hidden by default and available on demand.
+- **Bilingual UI**: French by default, FR/EN toggle in the top bar (every string lives in `src/i18n.rs`).
+- **Verified links**: only HTTPS URLs whose host is exactly YouTube / YouTube Music / youtu.be are accepted; paste with Ctrl+V or right-click.
+- **Settings remembered**: language, format, quality, naming, output folder and options are saved to `%LOCALAPPDATA%\CatchYT\settings.json` and restored on the next launch.
+- **One-click yt-dlp update**: the `↻ yt-dlp` button in the top bar, for when YouTube changes and downloads start failing.
+- **No console window**, DPI-aware, configurable output folder.
+
+### A note on FLAC
+
+The YouTube source is **lossy** (Opus or AAC). Converting to FLAC produces a file that is lossless *as a container*, with **no actual quality gain** over the source. It is offered for library consistency, not to recover quality that was never in the original stream.
+
+---
+
+## First launch
+
+CatchYT does **not** bundle `yt-dlp.exe`, `ffmpeg.exe` or `deno.exe` inside its binary. On first start it downloads them from their official GitHub repositories into:
 
 ```
 %LOCALAPPDATA%\CatchYT\bin\
 ```
 
-Ce choix est délibéré : empaqueter `yt-dlp.exe` (un build PyInstaller) dans l'exe augmente nettement le risque de faux positif antivirus. Le téléchargement au premier lancement garde le binaire principal petit et propre. Les lancements suivants réutilisent le cache. Compter environ **230 Mo à télécharger** et **400–450 Mo sur disque** pour les quatre exécutables (`yt-dlp`, `ffmpeg`, `ffprobe`, `deno`). Deno fournit le runtime JavaScript désormais recommandé par yt-dlp pour YouTube.
+This is deliberate. Bundling `yt-dlp.exe` (a PyInstaller build) inside the executable markedly raises the odds of an antivirus false positive. Downloading on first launch keeps the main binary small and clean. Later launches reuse the cache. Budget roughly **230 MB of download** and **400 to 450 MB on disk** for the four executables (`yt-dlp`, `ffmpeg`, `ffprobe`, `deno`). Deno provides the JavaScript runtime that yt-dlp now recommends for YouTube.
 
-Chaque téléchargement est **vérifié par empreinte SHA-256** avant d'être installé : Deno est épinglé (version + hash dans le code), yt-dlp et ffmpeg sont contrôlés contre les checksums publiés avec leur release. Le bouton « ↻ yt-dlp » de la barre du haut permet de retélécharger la dernière version de yt-dlp à tout moment.
+Every download is **verified by SHA-256** before being installed: Deno is pinned (version and hash in the code), while yt-dlp and ffmpeg are checked against the checksums published alongside their release. The `↻ yt-dlp` button re-downloads the latest yt-dlp at any time.
 
 ---
 
-## Obtenir l'exécutable
+## Getting the executable
 
-Deux voies, au choix.
+### 1. From a release (nothing to install)
 
-### 1. Build automatique via GitHub Actions (aucune installation locale)
+Go to [Releases](https://github.com/V-Vaal/CatchYT/releases) and download `catchyt.exe`. The release job attaches the artifact **that passed the tests**; it never rebuilds, so the published binary is the binary that was tested.
 
-Le workflow `.github/workflows/build.yml` compile et teste sur de vrais runners Windows, puis publie l'`.exe` en artefact.
+### 2. From a CI run
 
-1. Onglet **Actions** du dépôt → ouvre le dernier run `build` terminé.
-2. Section **Artifacts** → télécharge `catchyt-windows-x86_64` → `catchyt.exe`.
+The `.github/workflows/build.yml` workflow compiles and tests on real Windows runners, then publishes the `.exe` as an artifact. Open the **Actions** tab, pick the latest completed `build` run, and download `catchyt-windows-x86_64` from the **Artifacts** section. Note that artifacts require a signed-in GitHub account and expire; a release asset does neither.
 
-Un fork ou un clone poussé dans ton propre dépôt déclenche le même workflow automatiquement. Pour publier une release taguée avec l'exe attaché : crée un tag `vX.Y.Z` (`git tag v0.1.0 && git push --tags`) ; le job `release` rattache l'artefact **qui a passé les tests**, il ne recompile pas.
+### 3. Building locally on Windows
 
-### 2. Build local sur Windows
-
-Prérequis : installer Rust une fois depuis <https://rustup.rs> (toolchain par défaut **MSVC**).
+Requires Rust, installed once from <https://rustup.rs> (default **MSVC** toolchain).
 
 ```powershell
 git clone https://github.com/V-Vaal/CatchYT.git
 cd CatchYT
 powershell -ExecutionPolicy Bypass -File .\build.ps1
-# ou pour compiler puis lancer :
+# or to build and run:
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Run
 ```
 
-L'exécutable final prêt à copier sur une autre machine Windows x64 :
-`catchyt.exe` à la racine du projet. Le fichier intermédiaire de Cargo reste
-disponible dans `target\release\catchyt.exe`.
+The finished executable, ready to copy to another Windows x64 machine, is `catchyt.exe` at the project root. Cargo's intermediate file stays available at `target\release\catchyt.exe`.
 
-Le runtime Visual C++ est lié statiquement : Rust et le redistribuable Visual
-C++ ne sont pas requis sur la machine cible. CatchYT reste toutefois un
-exécutable **transportable avec réseau au premier lancement**, et non une
-distribution hors ligne : il télécharge `yt-dlp`, `ffmpeg`, `ffprobe` et `deno` dans
-`%LOCALAPPDATA%\CatchYT\bin\`.
+The Visual C++ runtime is statically linked, so neither Rust nor the Visual C++ redistributable is required on the target machine. CatchYT is still a **portable executable that needs network on first launch**, not an offline distribution: it downloads `yt-dlp`, `ffmpeg`, `ffprobe` and `deno` into `%LOCALAPPDATA%\CatchYT\bin\`.
 
-Ou en cargo direct :
+Or through cargo directly:
 
 ```powershell
 cargo test --all
@@ -93,54 +88,54 @@ cargo build --release
 
 ---
 
-## Portabilité
+## Portability
 
-**Aucune installation.** `catchyt.exe` est un binaire unique, lié statiquement au runtime C (pas de redistribuable Visual C++ requis, uniquement des DLL système Windows). Pas d'installateur, pas de registre, pas de service : copier l'exe suffit. Les seules écritures disque sont `%LOCALAPPDATA%\CatchYT\` (outils téléchargés + `settings.json`) et le dossier de sortie choisi — supprimer ce dossier et l'exe désinstalle tout.
+**No installation.** `catchyt.exe` is a single binary, statically linked against the C runtime (no Visual C++ redistributable required, only Windows system DLLs). No installer, no registry, no service: copying the executable is enough. The only disk writes are `%LOCALAPPDATA%\CatchYT\` (downloaded tools and `settings.json`) and the chosen output folder. Deleting that folder and the executable uninstalls everything.
 
-**Portage desktop (Linux / macOS).** Le code est prêt : tout le spécifique-Windows est isolé derrière `cfg(windows)` avec sa variante Unix (noms d'exécutables, permissions, masquage de console), les chemins passent par la crate `directories`, et la CI compile et teste l'intégralité du crate sur Ubuntu à chaque push. Le seul travail réel est dans `src/engine/deps.rs` : les trois URLs de bootstrap pointent vers des binaires Windows ; il faut les décliner par OS (yt-dlp publie `yt-dlp_linux` / `yt-dlp_macos`, Deno et ffmpeg ont leurs archives par plateforme) et produire les builds.
+**Desktop ports (Linux / macOS).** The code is ready: everything Windows-specific sits behind `cfg(windows)` with its Unix counterpart (executable names, permissions, console hiding), paths go through the `directories` crate, and CI compiles and tests the whole crate on Ubuntu at every push. The only real work is in `src/engine/deps.rs`, where the three bootstrap URLs point at Windows binaries and need per-OS variants (yt-dlp publishes `yt-dlp_linux` and `yt-dlp_macos`; Deno and ffmpeg have their own per-platform archives), plus producing the builds.
 
-**Mobile.** L'architecture (piloter des exécutables externes yt-dlp/ffmpeg/deno) ne se transpose pas telle quelle : Android demanderait un backend embarquant Python (à la youtubedl-android), et iOS interdit le lancement de sous-processus — un portage iOS impliquerait de remplacer le moteur, pas de l'adapter.
-
----
-
-## Antivirus & SmartScreen
-
-Un exécutable Rust **non signé** et fraîchement compilé peut déclencher un avertissement **SmartScreen** (« éditeur inconnu ») et, plus rarement, une heuristique antivirus — c'est vrai de tout binaire sans réputation, pas d'un problème du code.
-
-Ce que ce projet fait déjà pour minimiser les faux positifs :
-
-- pas de binaires tiers empaquetés (téléchargement des deps au 1er lancement) ;
-- manifeste Windows + métadonnées de version propres ;
-- build release *stripped*, LTO, sans code obfusqué ni patterns suspects.
-
-**La seule façon d'éliminer réellement les alertes est de signer l'exe** avec un certificat de signature de code. Voir [`SIGNING.md`](SIGNING.md) pour le guide d'obtention et d'utilisation.
+**Mobile.** The architecture, driving external yt-dlp/ffmpeg/deno executables, does not transpose as is. Android would need a backend embedding Python, along the lines of youtubedl-android, and iOS forbids spawning subprocesses altogether, so an iOS port would mean replacing the engine rather than adapting it.
 
 ---
 
-## Structure du projet
+## Antivirus and SmartScreen
 
-> Pour une visite guidée du code (architecture, threading, protocole de progression, décisions techniques, recettes d'extension), voir [`ARCHITECTURE.md`](ARCHITECTURE.md).
+An **unsigned**, freshly compiled Rust executable can trigger a **SmartScreen** warning ("unknown publisher") and, more rarely, an antivirus heuristic. That is true of any binary without reputation; it is not a symptom of a problem in the code.
+
+What this project already does to minimise false positives:
+
+- no third-party binaries bundled (dependencies are fetched on first launch);
+- a proper Windows manifest and version metadata;
+- a stripped release build with LTO, no obfuscated code and no suspicious patterns.
+
+**The only way to actually eliminate the warnings is to sign the executable** with a code-signing certificate. See [`SIGNING.md`](SIGNING.md) for how to obtain and use one.
+
+---
+
+## Project layout
+
+> For a guided tour of the code (architecture, threading, progress protocol, design decisions, extension recipes), see [`ARCHITECTURE.md`](ARCHITECTURE.md). It is written in French.
 
 ```
 src/
-  main.rs              point d'entrée (masque la console en release)
-  lib.rs               racine de la bibliothèque
-  app.rs               interface egui (état, options, progression)
-  i18n.rs              chaînes d'interface FR / EN
-  settings.rs          persistance des réglages (JSON, chargement tolérant)
+  main.rs              entry point (hides the console in release)
+  lib.rs               library root
+  app.rs               egui interface (state, options, progress)
+  i18n.rs              FR / EN interface strings
+  settings.rs          settings persistence (JSON, tolerant loading)
   theme.rs             palette / style
   engine/
-    mod.rs             ré-exports
-    options.rs         DownloadOptions + constructeur d'arguments yt-dlp (cœur testé)
-    deps.rs            bootstrap yt-dlp + ffmpeg/ffprobe + Deno au premier lancement
-    probe.rs           aperçu métadonnées (titre, playlist, nb d'items)
-    runner.rs          exécution yt-dlp + parsing de progression
+    mod.rs             re-exports
+    options.rs         DownloadOptions + yt-dlp argument builder (the tested core)
+    deps.rs            yt-dlp + ffmpeg/ffprobe + Deno bootstrap on first launch
+    probe.rs           metadata preview (title, playlist, item count)
+    runner.rs          yt-dlp execution + progress parsing
 tests/
-  engine_integration.rs   tests d'intégration (+ test e2e opt-in)
-assets/                icônes
-.github/workflows/     CI (build + test + artefact exe)
-build.rs               ressources Windows (icône, manifeste, version)
-build.ps1              build local Windows
+  engine_integration.rs   integration tests (+ opt-in e2e test)
+assets/                icons
+.github/workflows/     CI (build + test + exe artifact) and RUSTSEC audit
+build.rs               Windows resources (icon, manifest, version)
+build.ps1              local Windows build
 ```
 
 ---
@@ -151,26 +146,26 @@ build.ps1              build local Windows
 cargo test --all
 ```
 
-Le bootstrap réseau réel, sans téléchargement YouTube, est opt-in :
+The real network bootstrap, with no YouTube download, is opt-in:
 
 ```powershell
 $env:CATCHYT_BOOTSTRAP_E2E="1"; cargo test -- --ignored e2e_bootstraps_dependencies
 ```
 
-Les tests unitaires couvrent la construction des arguments (chaque format/qualité/nommage), le parsing de progression et la validation d'URL. Un test **end-to-end** réel (téléchargement d'une courte vidéo) est désactivé par défaut ; pour le lancer :
+Unit tests cover argument construction (every format, quality and naming combination), progress parsing and URL validation. A real **end-to-end** test, downloading a short video, is disabled by default:
 
 ```powershell
 $env:CATCHYT_E2E="1"; cargo test -- --ignored e2e_downloads_audio
 ```
 
-La CI l'exécute automatiquement sur le job Windows (non bloquant si YouTube limite l'IP du runner).
+CI runs it automatically on the Windows job, non-blocking in case YouTube rate-limits the runner's IP.
 
 ---
 
-## Légal
+## Legal
 
-Télécharger du contenu depuis YouTube peut enfreindre ses conditions d'utilisation et, selon le contenu, le droit d'auteur. Cet outil est destiné à un usage légitime (contenus que tu possèdes, sous licence libre, ou dont l'usage est autorisé). Tu es responsable de l'usage que tu en fais.
+Downloading content from YouTube may breach its terms of service and, depending on the content, copyright. This tool is meant for legitimate use: content you own, content under a free licence, or content you are otherwise allowed to use. You are responsible for how you use it.
 
 ## Licence
 
-MIT. CatchYT se contente de piloter `yt-dlp` (Unlicense), `ffmpeg` (LGPL/GPL selon le build) et Deno (MIT), téléchargés séparément.
+MIT. CatchYT only drives `yt-dlp` (Unlicense), `ffmpeg` (LGPL/GPL depending on the build) and Deno (MIT), each downloaded separately.
