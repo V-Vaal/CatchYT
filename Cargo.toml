@@ -5,7 +5,7 @@ edition = "2021"
 description = "CatchYT — a friendly desktop downloader for YouTube & YouTube Music, powered by yt-dlp"
 authors = ["Val"]
 license = "MIT"
-repository = ""
+repository = "https://github.com/V-Vaal/CatchYT"
 build = "build.rs"
 
 [lib]

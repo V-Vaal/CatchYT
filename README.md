@@ -1,8 +1,13 @@
 # CatchYT
 
+[![build](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml/badge.svg)](https://github.com/V-Vaal/CatchYT/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Téléchargeur de bureau pour **YouTube** et **YouTube Music**, écrit en **Rust** avec une interface **egui** native. CatchYT pilote `yt-dlp` + `ffmpeg` sous le capot et se concentre d'abord sur l'extraction audio (titres, albums, playlists), avec gestion des métadonnées, du nommage et du choix de format/qualité.
 
-> **Note technique importante.** Le projet est nommé « youtube-dl » par habitude, mais il s'appuie sur **yt-dlp**, le fork maintenu de youtube-dl. youtube-dl d'origine est quasi abandonné et casse régulièrement sur YouTube ; yt-dlp est compatible et à jour.
+*A native desktop downloader for YouTube and YouTube Music, written in Rust with an egui UI, driving `yt-dlp` and `ffmpeg`. Documentation is in French; the application itself ships bilingual FR/EN.*
+
+**Pour comprendre le projet en tant que développeur :** [`ARCHITECTURE.md`](ARCHITECTURE.md) (visite guidée du code, threading, protocole de progression, décisions techniques) et [`AUDIT.md`](AUDIT.md) (revue sécurité et code du projet par lui-même, avec le suivi des correctifs).
 
 ---
 
@@ -51,18 +56,18 @@ Deux voies, au choix.
 
 Le workflow `.github/workflows/build.yml` compile et teste sur de vrais runners Windows, puis publie l'`.exe` en artefact.
 
-1. Pousse ce dossier dans un dépôt GitHub.
-2. Onglet **Actions** → le workflow `build` se lance automatiquement.
-3. Ouvre le run terminé → section **Artifacts** → télécharge `catchyt-windows-x86_64` → `catchyt.exe`.
+1. Onglet **Actions** du dépôt → ouvre le dernier run `build` terminé.
+2. Section **Artifacts** → télécharge `catchyt-windows-x86_64` → `catchyt.exe`.
 
-Pour publier une release taguée avec l'exe attaché : crée un tag `vX.Y.Z` (`git tag v0.1.0 && git push --tags`).
+Un fork ou un clone poussé dans ton propre dépôt déclenche le même workflow automatiquement. Pour publier une release taguée avec l'exe attaché : crée un tag `vX.Y.Z` (`git tag v0.1.0 && git push --tags`) ; le job `release` rattache l'artefact **qui a passé les tests**, il ne recompile pas.
 
 ### 2. Build local sur Windows
 
 Prérequis : installer Rust une fois depuis <https://rustup.rs> (toolchain par défaut **MSVC**).
 
 ```powershell
-# à la racine du projet
+git clone https://github.com/V-Vaal/CatchYT.git
+cd CatchYT
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 # ou pour compiler puis lancer :
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Run
