@@ -1,0 +1,4 @@
+[target.x86_64-pc-windows-msvc]
+# Keep the distributed GUI executable independent from the Visual C++
+# Redistributable. Windows system DLLs remain dynamically linked as expected.
+rustflags = ["-C", "target-feature=+crt-static"]

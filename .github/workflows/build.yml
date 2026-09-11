@@ -1,0 +1,94 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ── Fast checks on Linux: formatting, lints, unit + integration tests ──────
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: System deps for eframe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+      - uses: Swatinem/rust-cache@v2
+      # Style checks are blocking: the codebase passes them, so any failure
+      # is a regression.
+      - name: Formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      # Tests are authoritative and must pass.
+      - name: Tests (pure)
+        run: cargo test --all
+
+  # ── Dependency advisories (RUSTSEC) — informative, never blocks ────────────
+  audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Audit dependencies
+        run: cargo audit
+
+  # ── Windows: build the shippable .exe and run tests, upload as artifact ────
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --all
+      - name: Build release
+        run: cargo build --release --target x86_64-pc-windows-msvc
+      - name: Optional end-to-end download test (non-blocking)
+        continue-on-error: true
+        env:
+          CATCHYT_E2E: "1"
+        run: cargo test -- --ignored e2e_downloads_audio
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catchyt-windows-x86_64
+          path: target/x86_64-pc-windows-msvc/release/catchyt.exe
+          if-no-files-found: error
+
+  # ── Tagged releases: attach the tested exe to a GitHub Release ─────────────
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Reuse the artifact that just passed the test job — never rebuild:
+      # the published binary must be the binary that was tested.
+      - name: Download tested artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: catchyt-windows-x86_64
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: catchyt.exe

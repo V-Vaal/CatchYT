@@ -1,0 +1,65 @@
+[package]
+name = "catchyt"
+version = "0.1.0"
+edition = "2021"
+description = "CatchYT — a friendly desktop downloader for YouTube & YouTube Music, powered by yt-dlp"
+authors = ["Val"]
+license = "MIT"
+repository = ""
+build = "build.rs"
+
+[lib]
+name = "catchyt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "catchyt"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.28", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+] }
+egui = "0.28"
+egui_extras = { version = "0.28", features = ["all_loaders"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# HTTP for the first-run dependency bootstrap. rustls avoids OpenSSL, which keeps
+# cross-compilation and antivirus footprint clean.
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "rustls-tls-native-roots",
+    "system-proxy",
+] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+ring = "0.17"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+directories = "5"
+rfd = "0.14"
+# Clipboard read for the URL field's right-click "Paste" menu entry. The
+# wayland feature costs nothing on Windows and keeps a future Linux build
+# working on Wayland desktops; image support stays off.
+arboard = { version = "3", default-features = false, features = ["wayland-data-control"] }
+anyhow = "1"
+thiserror = "1"
+log = "0.4"
+env_logger = "0.11"
+crossbeam-channel = "0.5"
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+# Release profile tuned for a small, clean single binary. Stripped symbols and
+# LTO reduce size and lower the chance of antivirus heuristic false positives.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

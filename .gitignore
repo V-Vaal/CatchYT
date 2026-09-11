@@ -1,0 +1,6 @@
+/target
+**/*.rs.bk
+Cargo.lock.orig
+*.pdb
+.DS_Store
+/catchyt.exe
